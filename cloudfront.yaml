@@ -1,0 +1,238 @@
+# /*
+# * Copyright 2018 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# *
+# * Permission is hereby granted, free of charge, to any person obtaining a copy of this
+# * software and associated documentation files (the "Software"), to deal in the Software
+# * without restriction, including without limitation the rights to use, copy, modify,
+# * merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
+# * permit persons to whom the Software is furnished to do so.
+# *
+# * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+# * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+# * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+# * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+# */
+
+AWSTemplateFormatVersion: '2010-09-09'
+Description: AWS Clouformation sample to deploy CloudFront Distributions with ACM certificate and S3 logging enabled.
+
+Parameters:
+
+  AlternateDomainNames:
+    Description:    CNAMEs (alternate domain names), if any, for the distribution. Example. mydomain.com
+    Type:           String
+    Default:        ""
+
+  ACMCertificateIdentifier:
+    Description:    The ARN for AWS Certificate Manager (ACM) certificate.
+    Type:           String
+    Default:        ""
+    
+  OriginProtocolPolicy:
+    Description:    CloudFront Origin Protocol Policy to apply to your origin.
+    Type:           String
+    Default:        "match-viewer"
+    AllowedValues:
+      - http-only
+      - match-viewer
+      - https-only
+
+  Compress:
+    Description:    CloudFront Origin Protocol Policy to apply to your origin.
+    Type:           String
+    Default:        "true"
+    AllowedValues:
+      - true
+      - false
+
+  DefaultTTL:
+    Description:    The default time in seconds that objects stay in CloudFront caches before CloudFront forwards another request to your custom origin. By default, AWS CloudFormation specifies 86400 seconds (one day).
+    Type:           String
+    Default:        "0"
+
+  MaxTTL:
+    Description:    The maximum time in seconds that objects stay in CloudFront caches before CloudFront forwards another request to your custom origin. By default, AWS CloudFormation specifies 31536000 seconds (one year).
+    Type:           String
+    Default:        "0"
+
+  MinTTL:
+    Description:    The minimum amount of time that you want objects to stay in the cache before CloudFront queries your origin to see whether the object has been updated.
+    Type:           String
+    Default:        "0"
+
+  SmoothStreaming:
+    Description:    Indicates whether to use the origin that is associated with this cache behavior to distribute media files in the Microsoft Smooth Streaming format.
+    Type:           String
+    Default:        "false"
+    AllowedValues:
+      - true
+      - false
+
+  QueryString:
+    Description:    CIndicates whether you want CloudFront to forward query strings to the origin that is associated with this cache behavior.
+    Type:           String
+    Default:        "false"
+    AllowedValues:
+      - true
+      - false
+
+  ForwardCookies:
+    Description:    Forwards specified cookies to the origin of the cache behavior.
+    Type:           String
+    Default:        "none"
+    AllowedValues:
+      - all
+      - whitelist
+      - none
+
+  ViewerProtocolPolicy:
+    Description:    The protocol that users can use to access the files in the origin that you specified in the TargetOriginId property when the default cache behavior is applied to a request.
+    Type:           String
+    Default:        "redirect-to-https"
+    AllowedValues:
+      - redirect-to-https
+      - allow-all
+      - https-only
+
+  PriceClass:
+    Description:    The price class that corresponds with the maximum price that you want to pay for CloudFront service. If you specify PriceClass_All, CloudFront responds to requests for your objects from all CloudFront edge locations.
+    Type:           String
+    Default:        "PriceClass_All"
+    AllowedValues:
+      - PriceClass_All
+      - PriceClass_100
+      - PriceClass_200
+
+  SslSupportMethod:
+    Description:    Specifies how CloudFront serves HTTPS requests.
+    Type:           String
+    Default:        "sni-only"
+    AllowedValues:
+      - sni-only
+      - vip
+
+  MinimumProtocolVersion:
+    Description:    The minimum version of the SSL protocol that you want CloudFront to use for HTTPS connections.
+    Type:           String
+    Default:        "TLSv1"
+    AllowedValues:
+      - TLSv1
+      - TLSv1.2_2018
+      - TLSv1.1_2016
+      - TLSv1_2016
+      - SSLv3
+
+  OriginKeepaliveTimeout:
+    Description:    You can create a custom keep-alive timeout. All timeout units are in seconds. The default keep-alive timeout is 5 seconds, but you can configure custom timeout lengths. The minimum timeout length is 1 second; the maximum is 60 seconds.
+    Type:           String
+    Default:        "60"
+
+  OriginReadTimeout:
+    Description:    You can create a custom origin read timeout. All timeout units are in seconds. The default origin read timeout is 30 seconds, but you can configure custom timeout lengths. The minimum timeout length is 4 seconds; the maximum is 60 seconds.
+    Type:           String
+    Default:        "30"
+
+  LoggingBucket:
+    Description:    The Amazon S3 bucket to log CloudFront requests.
+    Type:           String
+    Default:        "Enterthebucketname"
+    
+  DomainName:
+    Description:    The Origin DNS Name.
+    Type:           String
+    Default:        "MediaPackage EndPoint Name"
+    
+  WAFACL:
+    Description:    The ACL for your WAF Rules
+    Type:           String
+    Default:        "49d29e87-9bec-42eb-8237-03c11235add3"
+    
+  Environment:
+    Description:    For Tagging
+    Type:           String
+  
+  Owner:
+    Description:    For Tagging
+    Type:           String
+    
+  Comments:
+    Description:    Channel Name or Comments
+    Type:           String
+       
+
+Resources:
+
+
+# CLOUDFRONT DISTRIBUTION
+  CloudFrontDistribution:
+    Type: 'AWS::CloudFront::Distribution'
+    Properties:
+      Tags:
+        -
+            Key: 'Environment'
+            Value: !Ref 'Environment'
+        - 
+            Key: 'Owner'
+            Value: !Ref 'Owner'
+      DistributionConfig:
+        Comment: !Ref 'Comments'
+        Origins:
+          - DomainName: !Ref 'DomainName'
+            Id: !Ref 'DomainName'
+            CustomOriginConfig:
+              HTTPPort: '80'
+              HTTPSPort: '443'
+              OriginProtocolPolicy: !Ref 'OriginProtocolPolicy'
+              OriginKeepaliveTimeout: !Ref 'OriginKeepaliveTimeout'
+              OriginReadTimeout: !Ref 'OriginReadTimeout'
+              OriginSSLProtocols:
+                - TLSv1
+                - TLSv1.1
+                - TLSv1.2
+                - SSLv3
+        Enabled: true
+        HttpVersion: 'http2'
+        Aliases:
+          - !Ref 'AlternateDomainNames'
+        DefaultCacheBehavior:
+          AllowedMethods:
+            - GET
+            - HEAD
+            - DELETE
+            - OPTIONS
+            - PATCH
+            - POST
+            - PUT
+          Compress: !Ref 'Compress'
+          DefaultTTL: !Ref 'DefaultTTL'
+          MaxTTL: !Ref 'MaxTTL'
+          MinTTL: !Ref 'MinTTL'
+          SmoothStreaming: 'false'
+          TargetOriginId: !Ref 'DomainName'
+          ForwardedValues:
+            QueryString: !Ref 'QueryString'
+            Cookies:
+              Forward: !Ref 'ForwardCookies'
+          ViewerProtocolPolicy: !Ref 'ViewerProtocolPolicy'
+        PriceClass: !Ref 'PriceClass'
+        ViewerCertificate:
+          #Comment the below three lines if you wish to use CloudFrontDefaultCertificate and enable #CloudFrontDefaultCertificate
+          AcmCertificateArn: !Ref 'ACMCertificateIdentifier'
+          SslSupportMethod:  !Ref 'SslSupportMethod'
+          MinimumProtocolVersion: !Ref 'MinimumProtocolVersion'
+          #CloudFrontDefaultCertificate: true
+        Logging:
+          Bucket: !Sub '${LoggingBucket}.s3.amazonaws.com'
+        WebACLId: !Ref 'WAFACL'
+
+Outputs:
+
+  CloudFrontEndpoint:
+    Description: "Endpoint for Cloudfront Distribution"
+    Value:       !Ref 'CloudFrontDistribution'
+    
+  AlternateDomainNames:
+    Description: "Alternate Domain Names (CNAME)"
+    Value:       !Ref 'AlternateDomainNames'
